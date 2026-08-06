@@ -32,7 +32,7 @@ cd Jobhunting-skill-pack
 
 | Skill | 仓库位置 | 默认安装位置 | 在整套方法中的位置 |
 |---|---|---|---|
-| `consultant-style-resume-audit` | `skills/consultant-style-resume-audit` | `~/.agents/skills/consultant-style-resume-audit` | 架构层：判断候选人阶段、目标叙事、证据取舍、经历顺序与修改优先级 |
+| `cv-reviewer` | `skills/cv-reviewer` | `~/.agents/skills/cv-reviewer` | 架构层：判断候选人阶段、目标叙事、证据取舍、经历顺序与修改优先级 |
 | `cv-experience-refinement` | `skills/cv-experience-refinement` | `~/.agents/skills/cv-experience-refinement` | 正文层：把选中的单段经历改写为双层“总—分”结构 |
 | `bio-for-cv` | `skills/bio-for-cv` | `~/.agents/skills/bio-for-cv` | 首屏层：结合当前履历、目标公司和 JD，生成四条候选人中心的自我评价 |
 
@@ -121,7 +121,7 @@ cd Jobhunting-skill-pack
 
 ```mermaid
 flowchart LR
-    A["当前简历、事实素材、目标方向"] --> B["consultant-style-resume-audit\n定阶段、叙事、取舍和优先级"]
+    A["当前简历、事实素材、目标方向"] --> B["cv-reviewer\n定阶段、叙事、取舍和优先级"]
     B --> C["精修交接包\n范围、模式、主题、事实与禁写边界"]
     C --> D["cv-experience-refinement\n重写支柱与证明经历"]
     D --> E["更新后的事实型经历正文"]
@@ -141,7 +141,7 @@ flowchart LR
 
 ### 模式 A：从旧简历到目标版本
 
-1. 用 `consultant-style-resume-audit` 生成分档审查、P0/P1/P2、经历取舍和精修交接包；
+1. 用 `cv-reviewer` 生成分档审查、P0/P1/P2、经历取舍和精修交接包；
 2. 将交接包中的支柱/证明经历交给 `cv-experience-refinement`；
 3. 人工确认增补项并更新简历正文；
 4. 用 `bio-for-cv` 对目标公司和 JD 生成四条首屏摘要；
@@ -168,7 +168,7 @@ flowchart LR
 完整流程：
 
 ```text
-请先使用 consultant-style-resume-audit 审查这份简历与目标 JD，输出经历取舍和精修交接包；再按交接包使用 cv-experience-refinement 处理首批经历；我核对事实后，使用 bio-for-cv 生成四条简历顶部自我评价。
+请先使用 cv-reviewer 审查这份简历与目标 JD，输出经历取舍和精修交接包；再按交接包使用 cv-experience-refinement 处理首批经历；我核对事实后，使用 bio-for-cv 生成四条简历顶部自我评价。
 ```
 
 只做经历精修：

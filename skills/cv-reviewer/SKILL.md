@@ -1,9 +1,9 @@
 ---
-name: consultant-style-resume-audit
+name: cv-reviewer
 description: 审查和规划中文求职简历的目标叙事、成长路线、经历容量、行业语言、HR 五秒可读性与业务面试追问价值，并生成可直接交给 cv-experience-refinement 的经历精修交接包。适用于起步型、成长型和冲刺型候选人的简历审查、履历过多/过少或单条过厚/过薄处理、跨行业转岗、JD 定向、PDF/DOCX 新旧版本对比，以及审查后继续精修保留经历的场景。
 ---
 
-# Consultant Style Resume Audit
+# cv-reviewer
 
 先判断候选人处于什么阶段、材料是什么形态，再决定简历应该扩展、压缩、编排还是精确去重。不要对所有候选人机械套用同一套“大厂简历”标准。
 

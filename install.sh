@@ -3,9 +3,12 @@ set -euo pipefail
 
 REPO_URL="https://github.com/StariverKang/Jobhunting-skill-pack.git"
 SKILLS=(
-  "consultant-style-resume-audit"
+  "cv-reviewer"
   "cv-experience-refinement"
   "bio-for-cv"
+)
+LEGACY_SKILLS=(
+  "consultant-style-resume-audit"
 )
 
 target_dir="${AGENT_SKILLS_DIR:-${HOME}/.agents/skills}"
@@ -100,6 +103,16 @@ mkdir -p "$target_dir"
 timestamp="$(date '+%Y%m%d-%H%M%S')"
 backup_dir="$target_dir/.jobhunting-skill-pack-backups/$timestamp"
 backed_up=false
+
+for legacy_skill in "${LEGACY_SKILLS[@]}"; do
+  legacy_destination="$target_dir/$legacy_skill"
+  if [[ -e "$legacy_destination" ]]; then
+    mkdir -p "$backup_dir"
+    mv -- "$legacy_destination" "$backup_dir/$legacy_skill"
+    backed_up=true
+    echo "Migrated legacy $legacy_skill -> $backup_dir/$legacy_skill"
+  fi
+done
 
 for skill in "${SKILLS[@]}"; do
   destination="$target_dir/$skill"
