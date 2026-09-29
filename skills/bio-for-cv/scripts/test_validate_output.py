@@ -179,22 +179,72 @@ class ValidateOutputTests(unittest.TestCase):
         )
         self.assertEqual(len(validate(updated)), 4)
 
-    def test_rejects_short_line(self) -> None:
+    def test_rejects_hollow_conversion_triad(self) -> None:
+        self.assert_rejected(
+            "完成资料检索、赛道拆解、个股筛选并形成深度报告与估值判断",
+            "把问题转化为需求清单、体验优化建议和可执行运营动作，并完成资料检索",
+            "hollow conversion phrasing",
+        )
+
+    def test_rejects_slippage_without_price_mechanism(self) -> None:
+        self.assert_rejected(
+            "完成资料检索、赛道拆解、个股筛选并形成深度报告与估值判断",
+            "围绕TVL、交易量与流动性深度观察协议表现，结合滑点解释成交质量差异",
+            "滑点/Slippage without a mechanism",
+        )
+
+    def test_accepts_plain_language_liquidity_mechanism(self) -> None:
+        updated = VALID_SAMPLE.replace(
+            "完成资料检索、赛道拆解、个股筛选并形成深度报告与估值判断",
+            "围绕TVL、交易量与流动性深度判断盘口是否足够厚、大额买卖会否明显扰动价格",
+        )
+        self.assertEqual(len(validate(updated)), 4)
+
+    def test_accepts_slippage_after_stated_mechanism(self) -> None:
+        updated = VALID_SAMPLE.replace(
+            "完成资料检索、赛道拆解、个股筛选并形成深度报告与估值判断",
+            "判断盘口厚薄和大额买卖会否扰动价格，即滑点风险，并撰写竞品分析报告",
+        )
+        self.assertEqual(len(validate(updated)), 4)
+
+    def test_accepts_object_preserving_conversion(self) -> None:
+        updated = VALID_SAMPLE.replace(
+            "完成资料检索、赛道拆解、个股筛选并形成深度报告与估值判断",
+            "把文案歧义、入口错位和奖励路径中断还原到具体步骤，形成可验收的反馈清单",
+        )
+        self.assertEqual(len(validate(updated)), 4)
+
+    def test_accepts_specific_content_conversion(self) -> None:
+        updated = VALID_SAMPLE.replace(
+            "完成资料检索、赛道拆解、个股筛选并形成深度报告与估值判断",
+            "能够捕捉平台热点与用户情绪，将信号转化为选题、内容钩子和传播节奏",
+        )
+        self.assertEqual(len(validate(updated)), 4)
+
+    def test_accepts_ave_dex_revised_summary(self) -> None:
+        revised = """\
+1. 传播学背景，熟悉Web3钱包与CEX场景中的内容运营、社区触达与链上活动增长，兼具竞品研究和用户洞察，网感好，能够捕捉市场热点、上币叙事和社群情绪，并理解链上用户的参与动机。
+2. 行业研究能力扎实，能够运用Desk Research与Benchmark对比竞品的交易路径、增长动作和转化表现，并可围绕TVL、交易量与流动性深度判断盘口是否足够厚、大额买卖会否明显扰动价格，撰写竞品分析报告。
+3. 用户sense较好，善于从VOC、User Journey、社群反馈和路径阻塞定位真实卡点，能够推进KOL筛选并开展Telegram与X宣发，把文案歧义、入口错位和奖励路径中断还原到具体步骤，形成可验收的反馈清单。
+4. 闭环意识强，能够串联活动规则配置、渠道宣发、合作推进与反馈归纳，围绕Listing、Airdrop与Quest组织触达和转化，追踪CTR、CVR与链上活跃，沉淀SOP与复盘结论。
+"""
+        self.assertEqual(len(validate(revised)), 4)
         self.assert_rejected(
             "商业分析背景，熟悉A股、机器人、ESG与TMT领域的研究逻辑，兼具公司分析、行业研究和定量验证能力，能够从基本面、技术路径与经营数据建立系统判断",
             "商业分析背景，具备行业研究能力",
-            "minimum is 55",
+            "minimum is 70",
         )
 
-    def test_rejects_low_total_information_density(self) -> None:
-        compact = """\
-1. 商业分析背景，熟悉科技行业与资本市场研究逻辑，兼具公司分析、行业研究、财务理解和数据验证能力，并能从业务、数据与竞争格局形成判断
-2. 研究能力扎实，能够完成资料检索、行业拆解、公司分析、数据整理、观点提炼和结构化报告撰写，并输出明确的后续跟踪重点
-3. 兼具技术理解与定量分析能力，能够编写SQL查询并用Python处理业务数据，检验关键假设、解释模型结果和技术产品逻辑
-4. 英文表达和沟通能力较强，能够撰写研究材料、整理会议信息、协同相关方并持续跟踪关键问题、结论变化、风险事项及沟通重点
+    def test_accepts_lines_at_the_seventy_character_floor(self) -> None:
+        floor = """\
+1. 商业分析背景，熟悉科技行业与资本市场研究逻辑，兼具公司分析、行业研究、财务理解和数据验证能力，并能从业务、数据与竞争格局形成可复核的研究判断
+2. 研究能力扎实，能够完成资料检索、行业拆解、公司分析、数据整理、观点提炼和结构化报告撰写，并输出明确的后续跟踪重点、风险提示、分歧来源与下一步动作
+3. 兼具技术理解与定量分析能力，能够编写SQL查询并用Python处理业务数据，检验关键假设、解释模型结果和技术产品的成长逻辑，并说明假设变化如何影响结论
+4. 英文表达和沟通能力较强，能够撰写研究材料、整理会议信息、协同相关方并持续跟踪关键问题、结论变化、风险事项及沟通重点，沉淀会议纪要、待办事项与沟通口径
 """
-        with self.assertRaisesRegex(ValidationError, "minimum is 280"):
-            validate(compact)
+        validated = validate(floor)
+        self.assertEqual(len(validated), 4)
+        self.assertTrue(all(count >= 70 for _, count in validated))
 
     def test_lexicon_keeps_broad_role_and_industry_coverage(self) -> None:
         required_sections = (
@@ -254,8 +304,11 @@ class ValidateOutputTests(unittest.TestCase):
             self.assertIn(phrase, LEXICON)
         self.assertIn("5–9 个专业锚点", SKILL_TEXT)
         self.assertIn("关键行业术语的列举和说明是必须项", SKILL_TEXT)
+        self.assertIn("不得为凑这项再引入未承接的新术语", SKILL_TEXT)
+        self.assertIn("任务链", SKILL_TEXT)
         self.assertIn("至少一条用 2–4 个同类关键词", PATTERNS)
         self.assertIn("自然能力语言", PATTERNS)
+        self.assertIn("可观察问题类型", PATTERNS)
 
     def test_calibration_examples_pass_validator(self) -> None:
         blocks = re.findall(r"```text\n(.*?)\n```", EXAMPLES, re.DOTALL)

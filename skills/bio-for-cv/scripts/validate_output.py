@@ -11,7 +11,8 @@ from pathlib import Path
 
 
 MAX_VISIBLE_CHARACTERS = 120
-MIN_VISIBLE_CHARACTERS = 55
+MIN_VISIBLE_CHARACTERS = 70
+PREFERRED_MIN_VISIBLE_CHARACTERS = 80
 MIN_TOTAL_VISIBLE_CHARACTERS = 280
 NUMBERED_LINE = re.compile(
     r"^\s*(?:(?P<plain>[1-4])[.、．)]|[（(](?P<wrapped>[1-4])[）)])\s*(?P<body>.*?)\s*$"
@@ -137,8 +138,101 @@ CATCH_ALL_CATEGORIES = {
 }
 
 
+HOLLOW_CONVERSION_PHRASES = (
+    "把问题转化为",
+    "将问题转化为",
+    "转化为需求、方案和优先级",
+    "转化为需求，方案和优先级",
+    "需求清单、体验优化建议",
+    "体验优化建议和可执行运营动作",
+    "可执行运营动作",
+    "转化为产品或运营动作",
+    "转化为产品和运营策略",
+    "转化为可落地的产品与运营动作",
+    "转化为可分析框架",
+    "形成可执行判断",
+    "转化为运营策略与验证路径",
+    "转化为清晰需求与验证路径",
+    "将洞察转化为产品或运营动作",
+)
+HOLLOW_OBJECT_STEMS = {
+    "问题",
+    "需求",
+    "方案",
+    "优先级",
+    "洞察",
+    "反馈",
+    "策略",
+    "动作",
+    "建议",
+    "框架",
+    "判断",
+    "路径",
+    "优化建议",
+    "需求清单",
+    "运营动作",
+    "运营策略",
+    "验证路径",
+    "可执行判断",
+    "可分析框架",
+    "可执行运营动作",
+    "体验优化建议",
+    "产品动作",
+    "清晰需求",
+}
+OBJECT_SPLITTER = re.compile(r"[、，,/]|以及|及|与|和")
+CONVERSION_TAIL = re.compile(r"(?:转化为|转化成|形成|输出)(?P<objects>[^。；;]+)")
+HOLLOW_OBJECT_PREFIX = re.compile(
+    r"^(?:可执行的|可落地的|可分析的|可追踪的|可验证的|可验收的|可讨论的|可复用的|"
+    r"清晰的|明确的|可执行|可落地|可分析|可追踪|可验证|可验收|可讨论|可复用|清晰|明确)"
+)
+SLIPPAGE_TERM = re.compile(r"滑点|slippage", re.IGNORECASE)
+SLIPPAGE_MECHANISM = re.compile(
+    r"盘口|扰动价格|价格扰动|成交价|价格冲击|price\s*impact|即滑点|也就是滑点",
+    re.IGNORECASE,
+)
+
+
 class ValidationError(ValueError):
     """Raised when output violates the skill contract."""
+
+
+def normalize_deliverable_object(text: str) -> str:
+    """Strip empty modifiers so category nouns can be compared exactly."""
+    cleaned = text.strip().strip("的")
+    cleaned = HOLLOW_OBJECT_PREFIX.sub("", cleaned).strip().strip("的")
+    return cleaned
+
+
+def validate_hollow_conversion(body: str, line_number: int) -> None:
+    """Reject conversion clauses that only contain generic deliverable labels."""
+    for phrase in HOLLOW_CONVERSION_PHRASES:
+        if phrase in body:
+            raise ValidationError(
+                f"line {line_number} uses hollow conversion phrasing ({phrase}); "
+                "keep observable problem types and a verifiable deliverable"
+            )
+
+    for match in CONVERSION_TAIL.finditer(body):
+        parts = [
+            normalize_deliverable_object(part)
+            for part in OBJECT_SPLITTER.split(match.group("objects"))
+            if part.strip()
+        ]
+        if len(parts) >= 2 and all(part in HOLLOW_OBJECT_STEMS for part in parts):
+            raise ValidationError(
+                f"line {line_number} converts only generic category nouns "
+                f"({', '.join(parts)}); name the concrete object from the evidence matrix"
+            )
+
+
+def validate_orphan_mechanism_terms(body: str, line_number: int) -> None:
+    """Reject mechanism jargon that is not attached to a stated mechanism."""
+    if SLIPPAGE_TERM.search(body) and not SLIPPAGE_MECHANISM.search(body):
+        raise ValidationError(
+            f"line {line_number} uses 滑点/Slippage without a mechanism such as "
+            "盘口 thickness or price impact; write the mechanism in plain language first"
+        )
 
 
 def visible_length(text: str) -> int:
@@ -245,6 +339,8 @@ def validate(text: str, *, allow_school: bool = False) -> list[tuple[str, int]]:
                 )
 
         validate_semantic_enumerations(body, expected_number)
+        validate_hollow_conversion(body, expected_number)
+        validate_orphan_mechanism_terms(body, expected_number)
 
         count = visible_length(body)
         if count < MIN_VISIBLE_CHARACTERS:
@@ -278,9 +374,9 @@ def read_text(input_path: str | None) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Validate four rich, candidate-centered self-summary lines of 55-120 "
-            "characters each and at least 280 characters in total, "
-            "without colons, dash-based fragments, truncated Copywriting, "
+            "Validate four rich, candidate-centered self-summary lines of 70-120 "
+            "characters each, preferably 80 or more, and at least 280 characters "
+            "in total, without colons, dash-based fragments, truncated Copywriting, "
             "specific experience narration, employer/JD framing, or mixed-category "
             "keyword enumeration; education institutions are omitted by default."
         )
@@ -308,7 +404,12 @@ def main() -> int:
 
     print("VALID")
     for index, (_, count) in enumerate(validated, start=1):
-        print(f"{index}: {count}/{MAX_VISIBLE_CHARACTERS}")
+        preferred_note = (
+            f"  preferred {PREFERRED_MIN_VISIBLE_CHARACTERS}+"
+            if count < PREFERRED_MIN_VISIBLE_CHARACTERS
+            else ""
+        )
+        print(f"{index}: {count}/{MAX_VISIBLE_CHARACTERS}{preferred_note}")
     print(f"total: {sum(count for _, count in validated)}/{MIN_TOTAL_VISIBLE_CHARACTERS} minimum")
     return 0
 
